@@ -39,4 +39,3 @@ ALLOWED_PPT_EXTENSIONS: list = [".pptx", ".ppt"]
 # AI 请求配置
 DEFAULT_TEMPERATURE: float = 0.7
 DEFAULT_MAX_TOKENS: int = 2000
-

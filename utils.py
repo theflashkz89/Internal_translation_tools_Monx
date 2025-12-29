@@ -2,7 +2,7 @@ import os
 import json
 import streamlit as st
 from openai import OpenAI
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Dict, Any
 import PyPDF2
 from pdf2docx import Converter
 from docx import Document
@@ -989,3 +989,133 @@ def apply_custom_styles():
         }
         </style>
     """, unsafe_allow_html=True)
+
+
+def parse_ppt_content(content: str) -> List[Dict[str, Any]]:
+    """
+    解析 PPT 内容文本，提取每页的标题和内容
+    
+    支持的格式：
+    - Slide 1: 标题 / Slide 1 - 标题
+    - 第一页：标题 / 第1页：标题
+    - 1. 标题
+    
+    参数:
+        content (str): PPT 内容文本
+    
+    返回:
+        List[Dict]: 每页内容列表，格式为 [{"title": "标题", "content": ["内容1", "内容2"]}, ...]
+    """
+    slides = []
+    
+    if not content or not content.strip():
+        return slides
+    
+    # 定义分隔模式：匹配 Slide N、第N页、数字编号等格式
+    # 使用多行模式匹配
+    pattern = r'(?:^|\n)(?:Slide\s*(\d+)|第([一二三四五六七八九十\d]+)页|(\d+)\s*[\.、])[\s:：\-]*(.+?)(?=(?:\nSlide\s*\d+|\n第[一二三四五六七八九十\d]+页|\n\d+\s*[\.、]|\Z))'
+    
+    matches = re.finditer(pattern, content, re.MULTILINE | re.DOTALL)
+    
+    for match in matches:
+        # 提取标题部分（匹配组4）
+        title_section = match.group(4).strip() if match.group(4) else ""
+        
+        # 分离标题和内容
+        lines = title_section.split('\n')
+        title = lines[0].strip() if lines else ""
+        
+        # 提取内容（去除标题后的所有行）
+        content_lines = []
+        for line in lines[1:]:
+            line = line.strip()
+            if line:
+                # 移除列表标记（如果已有）
+                if line.startswith(('-', '•', '·', '*', '1.', '2.', '3.', '4.', '5.')):
+                    # 移除标记后的空格
+                    line = re.sub(r'^[-•·*\d\.]\s*', '', line)
+                content_lines.append(line)
+        
+        if title:  # 只有当标题存在时才添加幻灯片
+            slides.append({
+                "title": title,
+                "content": content_lines
+            })
+    
+    # 如果没有匹配到任何格式，尝试按空行分割作为备选方案
+    if not slides:
+        sections = re.split(r'\n\s*\n', content.strip())
+        for section in sections:
+            lines = [line.strip() for line in section.split('\n') if line.strip()]
+            if lines:
+                title = lines[0]
+                content_lines = []
+                for line in lines[1:]:
+                    if line.startswith(('-', '•', '·', '*', '1.', '2.', '3.', '4.', '5.')):
+                        line = re.sub(r'^[-•·*\d\.]\s*', '', line)
+                    content_lines.append(line)
+                slides.append({
+                    "title": title,
+                    "content": content_lines
+                })
+    
+    return slides
+
+
+def generate_pptx(slides: List[Dict[str, Any]], output_path: str = None) -> str:
+    """
+    根据幻灯片数据生成 PPTX 文件
+    
+    参数:
+        slides (List[Dict]): 幻灯片数据列表
+        output_path (str, optional): 输出文件路径，如果为 None 则自动生成
+    
+    返回:
+        str: 生成的 PPTX 文件路径
+    """
+    from pptx import Presentation
+    from pptx.util import Inches, Pt
+    
+    prs = Presentation()
+    
+    # 设置幻灯片尺寸 (16:9)
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+    
+    for slide_data in slides:
+        # 使用空白布局
+        slide_layout = prs.slide_layouts[6]  # 空白布局
+        slide = prs.slides.add_slide(slide_layout)
+        
+        # 添加标题
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.5), Inches(12), Inches(1))
+        title_frame = title_box.text_frame
+        title_para = title_frame.paragraphs[0]
+        title_para.text = slide_data.get("title", "")
+        title_para.font.size = Pt(32)
+        title_para.font.bold = True
+        
+        # 添加内容
+        content_items = slide_data.get("content", [])
+        if content_items:
+            content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.8), Inches(12), Inches(5))
+            content_frame = content_box.text_frame
+            content_frame.word_wrap = True
+            
+            for i, item in enumerate(content_items):
+                if i == 0:
+                    para = content_frame.paragraphs[0]
+                else:
+                    para = content_frame.add_paragraph()
+                para.text = f"• {item}" if not item.startswith(("•", "-", "·")) else item
+                para.font.size = Pt(18)
+                para.space_after = Pt(12)
+    
+    # 保存文件
+    if output_path is None:
+        temp_dir = Path("temp")
+        temp_dir.mkdir(exist_ok=True)
+        output_path = str(temp_dir / f"generated_{uuid.uuid4()}.pptx")
+    
+    prs.save(output_path)
+    return output_path

@@ -1,6 +1,9 @@
 """
 AI 服务模块
 负责与 DeepSeek API 的交互
+
+注意：当前版本主要使用 utils.py 中的 call_deepseek_api() 函数
+本模块作为未来扩展的备选封装层保留
 """
 
 import openai
@@ -159,6 +162,5 @@ class AIService:
         ]
         
         return self.chat_completion(messages, max_tokens=target_length * 2)
-
 
 
