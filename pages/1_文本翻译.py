@@ -1,4 +1,3 @@
-# ... imports remain the same ...
 import streamlit as st
 import streamlit.components.v1 as components
 from utils import translate_text, apply_custom_styles
@@ -54,32 +53,7 @@ st.markdown("""
         border-radius: 0 12px 12px 0 !important;
     }
     
-    /* 中间列分割线模拟: 我们可以给左侧框加一个右边框，或者这里不做处理，
-       只靠中间列的内容。用户要求"中间共用一根极细的浅灰色分割线"。
-       既然是3列布局，中间的gap列实际上是不可控的一块区域。
-       我们在中间列加入一个全高容器或者利用 border 模拟?
-       为了简洁，我们让左框有右边框(很细)，右框有左边框(很细)? 
-       不，那样就是双线了。
-       
-       解决方案: 给左框一个右边框 solid #e0e0e0 1px.
-       中间列只是放置 selectbox。
-       但是中间列如果不填满，看起来会断掉。
-       由于 Streamlit 限制，很难让中间列背景色自动填满高度。
-       这里我们采用视觉欺骗:
-       左框 border-right: 1px solid #f0f0f0
-       右框 border-left: none
-       中间列背景透明? 不，我们需要看起来是一体的。
-       
-       Better approach for "Seamless":
-       Let's try to match the user's "Divider" request by styling the selectbox container
-       or adding a vertical line div in the middle col.
-       For now, we will add a right border to the left text area to serve as the divider, 
-       and ensure the middle column is very narrow or purely cosmetic?
-       Actually, with [10, 2, 10], the middle is wide.
-       The Selectbox sits there.
-       We will rely on the "White" background of the page? No, page bg might be gray/white.
-       We force textareas to be white.
-    */
+    /* 中间列分割线：左框右边框作为分割线 */
     
     /* 调整 Selectbox 样式以居中且融合 */
     [data-testid="stSelectbox"] {
@@ -118,7 +92,7 @@ st.markdown("<h1>📝 文本翻译</h1>", unsafe_allow_html=True)
 
 # 常用语言列表
 languages = [
-    "英语", "日语", "韩语", "法语", "德语", 
+    "中文", "英语", "日语", "韩语", "法语", "德语", 
     "西班牙语", "俄语", "意大利语", "葡萄牙语", "阿拉伯语",
     "泰语", "越南语", "印尼语", "荷兰语", "瑞典语",
     "挪威语", "丹麦语", "芬兰语", "波兰语", "土耳其语"
@@ -145,7 +119,7 @@ with col_mid:
     target_language = st.selectbox(
         "目标语言",
         options=languages,
-        index=0,
+        index=1,
         key="target_language",
         label_visibility="collapsed"
     )
@@ -244,5 +218,4 @@ if translate_button:
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ 翻译失败: {str(e)}")
-
 

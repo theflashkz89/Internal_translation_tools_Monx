@@ -19,8 +19,8 @@ col_lang1, col_lang2 = st.columns([1, 3])
 with col_lang1:
     target_language = st.selectbox(
         "🎯 选择目标语言",
-        ["英语", "日语", "法语", "德语", "西班牙语", "俄语", "韩语", "意大利语", "葡萄牙语", "阿拉伯语"],
-        index=0
+        ["中文", "英语", "日语", "法语", "德语", "西班牙语", "俄语", "韩语", "意大利语", "葡萄牙语", "阿拉伯语"],
+        index=1
     )
 
 st.markdown("---")
@@ -231,7 +231,6 @@ with col2:
             original_name = Path(st.session_state.original_filename).stem if st.session_state.original_filename else "document"
             # 确保文件名是字符串
             download_filename = f"translated_{original_name}_{target_language}.docx"
-            print(f"DEBUG: Generated Download Filename: {download_filename}")
             
             # 下载按钮
             st.download_button(

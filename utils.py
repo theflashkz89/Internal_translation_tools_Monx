@@ -55,29 +55,8 @@ def _get_deepl_translator():
     
     return deepl_translator
 
-# 本地术语库：企业信用报告常用术语（中文 -> 英文）
+# 术语库：从 glossary.json 加载
 # 用于减少 API 调用并提高翻译准确度
-# 默认术语库（如果外部文件加载失败时使用）
-GLOSSARY = {
-    '统一社会信用代码': 'Unified Social Credit Code',
-    '企业名称': 'Enterprise Name',
-    '法定代表人': 'Legal Representative',
-    '注册资本': 'Registered Capital',
-    '成立日期': 'Establishment Date',
-    '营业期限': 'Business Term',
-    '经营范围': 'Business Scope',
-    '企业类型': 'Enterprise Type',
-    '登记状态': 'Registration Status',
-    '注册地址': 'Registered Address',
-    '股东信息': 'Shareholder Information',
-    '主要人员': 'Key Personnel',
-    '对外投资': 'Outbound Investment',
-    '变更记录': 'Change Records',
-    '存续': 'Existing',
-    '注销': 'Deregistrated'
-}
-
-
 def load_glossary() -> dict:
     """
     从根目录下的 glossary.json 文件加载术语库
@@ -107,6 +86,10 @@ def load_glossary() -> dict:
     except Exception as e:
         print(f"警告：加载术语库文件 {glossary_path} 时发生错误：{str(e)}，使用默认术语库")
         return {}
+
+
+# 在模块加载时初始化术语库
+GLOSSARY = load_glossary()
 
 
 def call_deepseek_api(text: str, prompt: str, model: str = "deepseek-chat", max_retries: int = 3) -> str:
@@ -265,13 +248,16 @@ def translate_text(text: str, target_language: str) -> str:
     异常:
         Exception: 当翻译失败时抛出异常
     """
-    # 检查术语库：如果文本在术语库中，直接返回对应的翻译，不调用 API
+    # 获取目标语言代码
+    target_lang_code = _get_deepl_lang_code(target_language)
+    
+    # 检查术语库：只有当目标语言是英语时，才使用术语库
+    # 术语库仅支持中文→英文方向
     text_stripped = text.strip()
-    if text_stripped in GLOSSARY:
+    if target_lang_code.upper().startswith("EN") and text_stripped in GLOSSARY:
         return GLOSSARY[text_stripped]
     
-    # 如果不在术语库中，使用 DeepL API 进行翻译
-    target_lang_code = _get_deepl_lang_code(target_language)
+    # 如果不在术语库中或目标语言不是英语，使用 DeepL API 进行翻译
     return call_deepl_api(text, target_lang=target_lang_code)
 
 
@@ -286,6 +272,8 @@ def _get_deepl_lang_code(language_name: str) -> str:
         str: DeepL 语言代码（如：EN-US、JA、FR 等）
     """
     language_map = {
+        "中文": "ZH",
+        "简体中文": "ZH",
         "英语": "EN-US",
         "日语": "JA",
         "法语": "FR",
@@ -344,7 +332,6 @@ def call_deepl_api(text: str, target_lang: str = "EN-US") -> str:
         # 获取 DeepL 翻译器实例
         translator = _get_deepl_translator()
         
-        print(f"Calling DeepL API with text length: {len(text)}, target: {target_lang}")
         # 调用 DeepL API 进行翻译
         result = translator.translate_text(text, target_lang=target_lang)
         
@@ -366,13 +353,7 @@ def call_deepl_api(text: str, target_lang: str = "EN-US") -> str:
         raise Exception(f"DeepL API 调用失败：{str(e)}")
     except Exception as e:
         # 捕获其他未知异常
-        import traceback
-        traceback.print_exc()
-        print(f"DeepL API Error: {str(e)}")
         raise Exception(f"调用 DeepL API 时发生未知错误：{str(e)}")
-
-    print(f"DeepL Translation Success: {result.text[:50]}...")
-    return result.text
 
 
 def call_deepl_api_batch(texts: List[str], target_lang: str = "EN-US") -> List[str]:
@@ -570,12 +551,7 @@ def translate_word_document(docx_path: str, target_language: str, progress_callb
     # 检查目标语言是否为英语（术语库仅适用于中译英）
     is_target_english = "英" in target_language or "English" in target_language
     
-    # 加载外部术语库
-    global GLOSSARY
-    external_glossary = load_glossary()
-    if external_glossary:
-        # 合并外部术语库和默认术语库（外部术语库优先）
-        GLOSSARY = {**GLOSSARY, **external_glossary}
+    # 术语库已在模块加载时初始化，无需重复加载
     
     def _apply_translation_to_paragraph(paragraph, translated_text: str):
         """
