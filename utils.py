@@ -840,31 +840,56 @@ def translate_word_document(docx_path: str, target_language: str, progress_callb
 def apply_custom_styles():
     """
     应用自定义样式（DeepL风格）
+    使用多阶段加载策略防止UI闪烁：
+    1. 第一阶段：立即隐藏页面，应用关键样式
+    2. 第二阶段：加载完整样式
+    3. 第三阶段：渐入显示页面
     """
+    # 第一阶段：关键样式 + 初始隐藏（防止闪烁）
     st.markdown("""
         <style>
         /* ================================================================================== */
-        /* 全局字体与基础设置 */
+        /* 第一阶段：关键样式 - 立即隐藏并设置基础 */
         /* ================================================================================== */
-        @import url('https://fonts.googleapis.com/css2?family=dataset&family=Inter:wght@400;500;600;700&display=swap');
         
+        /* 立即隐藏原生导航栏 - 使用多重选择器确保覆盖 */
+        [data-testid="stSidebarNav"],
+        [data-testid="stSidebarNav"] *,
+        nav[data-testid="stSidebarNav"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            pointer-events: none !important;
+        }
+        
+        /* 立即设置背景色，防止白屏闪烁 */
+        .stApp {
+            background-color: #FFFFFF !important;
+        }
+        
+        section[data-testid="stSidebar"] {
+            background-color: #0F2B46 !important;
+        }
+        
+        /* ================================================================================== */
+        /* 全局字体与基础设置 - 使用系统字体避免加载延迟 */
+        /* ================================================================================== */
         html, body, [class*="css"] {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif !important;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             color: #333333;
         }
         
-        .stApp {
-            background-color: #FFFFFF;
-        }
-        
         /* ================================================================================== */
-        /* 侧边栏样式 (DeepL 深蓝色风格) - 修复字体颜色 */
+        /* 侧边栏样式 (DeepL 深蓝色风格) */
         /* ================================================================================== */
         section[data-testid="stSidebar"] {
-            background-color: #0F2B46; /* Deep Navy Blue */
-            border-right: none;
+            background-color: #0F2B46 !important;
+            border-right: none !important;
         }
         
         /* 强制侧边栏内所有文本为白色 */
@@ -879,9 +904,9 @@ def apply_custom_styles():
             color: #FFFFFF !important;
         }
         
-        /* 侧边栏链接/按钮 - 修复 */
+        /* 侧边栏链接/按钮 */
         section[data-testid="stSidebar"] a {
-            color: #60A5FA !important; /* Lighter blue for links */
+            color: #60A5FA !important;
         }
         
         /* 侧边栏分割线 */
@@ -892,27 +917,18 @@ def apply_custom_styles():
         /* 侧边栏的信息提示框 */
         section[data-testid="stSidebar"] .stAlert {
             background-color: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
         }
         section[data-testid="stSidebar"] .stAlert * {
             color: #FFFFFF !important;
         }
         
         /* ================================================================================== */
-        /* 隐藏 Streamlit 原生导航栏 (Sidebar Nav) */
-        /* ================================================================================== */
-        [data-testid="stSidebarNav"] {
-            display: none !important;
-        }
-        
-        /* ================================================================================== */
-        /* 主区域样式 */
-        /* ================================================================================== */
-        
         /* 标题颜色 */
+        /* ================================================================================== */
         h1, h2, h3 {
-            color: #0F2B46;
-            font-weight: 700;
+            color: #0F2B46 !important;
+            font-weight: 700 !important;
         }
         
         /* ================================================================================== */
@@ -924,11 +940,10 @@ def apply_custom_styles():
             border: 1px solid #E5E7EB !important;
             border-radius: 8px !important;
             color: #1F2937 !important;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-            padding: 1rem;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
         }
         
-        /* 聚焦状态 - DeepL Blue Focus */
+        /* 聚焦状态 */
         .stTextInput > div > div > input:focus,
         .stTextArea > div > div > textarea:focus {
             border-color: #3B82F6 !important;
@@ -944,20 +959,21 @@ def apply_custom_styles():
         }
 
         /* ================================================================================== */
-        /* 按钮样式 - 修复红色按钮问题 */
+        /* 按钮样式 */
         /* ================================================================================== */
         
-        /* Primary Button (主要操作) - 强制覆盖所有可能的 Primary 选择器 */
+        /* Primary Button */
         .stButton button[kind="primary"],
         .stButton button[type="primary"],
         div[data-testid="stBaseButton-primary"],
-        button[data-testid="stBaseButton-primary"] {
-            background-color: #3B82F6 !important; /* Bright Blue */
+        button[data-testid="stBaseButton-primary"],
+        .stDownloadButton button,
+        div[data-testid="stBaseButton-primary"] button {
+            background-color: #3B82F6 !important;
             color: #FFFFFF !important;
             border: none !important;
             border-radius: 6px !important;
             font-weight: 600 !important;
-            padding: 0.6rem 1.2rem !important;
             box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3) !important;
             transition: all 0.2s ease !important;
         }
@@ -966,12 +982,12 @@ def apply_custom_styles():
         .stButton button[type="primary"]:hover,
         div[data-testid="stBaseButton-primary"]:hover,
         button[data-testid="stBaseButton-primary"]:hover {
-            background-color: #2563EB !important; /* Darker Blue */
+            background-color: #2563EB !important;
             box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4) !important;
             transform: translateY(-1px);
         }
         
-        /* Secondary Button (普通按钮) */
+        /* Secondary Button */
         .stButton button[kind="secondary"],
         .stButton button[type="secondary"],
         div[data-testid="stBaseButton-secondary"],
@@ -986,55 +1002,73 @@ def apply_custom_styles():
         /* 文件上传组件汉化与美化 */
         /* ================================================================================== */
         [data-testid="stFileUploader"] {
-            padding: 20px;
-            border: 2px dashed #CBD5E1;
-            border-radius: 12px;
-            background-color: #F8F9FA;
+            padding: 20px !important;
+            border: 2px dashed #CBD5E1 !important;
+            border-radius: 12px !important;
+            background-color: #F8F9FA !important;
         }
         
         /* 覆盖 "Drag and drop..." 文字 */
         [data-testid="stFileUploader"] section > div > div > span {
-            visibility: hidden;
-            position: relative;
+            visibility: hidden !important;
+            position: relative !important;
         }
         [data-testid="stFileUploader"] section > div > div > span::after {
-            content: "拖拽文件到此处";
-            visibility: visible;
-            position: absolute;
-            top: 0;
-            left: 0;
-            color: #0F2B46;
-            font-weight: 600;
-            font-size: 1.1em;
+            content: "拖拽文件到此处" !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            color: #0F2B46 !important;
+            font-weight: 600 !important;
+            font-size: 1.1em !important;
         }
         
         /* 覆盖 Limit 文字 */
         [data-testid="stFileUploader"] section > div > div > small {
-            visibility: hidden;
-            position: relative;
+            visibility: hidden !important;
+            position: relative !important;
         }
         [data-testid="stFileUploader"] section > div > div > small::after {
-            content: "单个文件限制 200MB • DOCX, PDF";
-            visibility: visible;
-            position: absolute;
-            top: 0;
-            left: 0;
-            color: #64748B;
+            content: "单个文件限制 200MB • DOCX, PDF" !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            color: #64748B !important;
         }
         
         /* 浏览按钮文字覆盖 */
         [data-testid="stFileUploader"] button[data-testid="stBaseButton-secondary"] {
             font-size: 0 !important;
-            min-width: 100px;
+            min-width: 100px !important;
         }
         [data-testid="stFileUploader"] button[data-testid="stBaseButton-secondary"]::after {
-            content: "浏览文件";
+            content: "浏览文件" !important;
             font-size: 14px !important;
-            visibility: visible;
-            color: #1F2937;
+            visibility: visible !important;
+            color: #1F2937 !important;
         }
         </style>
     """, unsafe_allow_html=True)
+
+
+def init_page(page_title: str, page_icon: str, layout: str = "wide"):
+    """
+    统一的页面初始化函数
+    确保配置和样式按正确顺序加载
+    
+    参数:
+        page_title (str): 页面标题
+        page_icon (str): 页面图标
+        layout (str): 页面布局，默认为 "wide"
+    """
+    st.set_page_config(
+        page_title=page_title,
+        page_icon=page_icon,
+        layout=layout
+    )
+    apply_custom_styles()
 
 
 def parse_ppt_content(content: str) -> List[Dict[str, Any]]:

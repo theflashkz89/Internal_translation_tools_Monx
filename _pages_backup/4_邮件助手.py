@@ -1,15 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
-from utils import apply_custom_styles, generate_email_draft
+from utils import init_page, generate_email_draft
 import json
 
-st.set_page_config(
-    page_title="邮件助手",
-    page_icon="✉️",
-    layout="wide"
-)
-
-apply_custom_styles()
+init_page("邮件助手", "✉️", "wide")
 
 st.title("✉️ 邮件助手")
 st.markdown("使用 AI 协助您撰写专业的邮件草稿")

@@ -1,0 +1,26 @@
+[theme]
+# 主色调 - DeepL 蓝色
+primaryColor = "#3B82F6"
+# 背景色 - 纯白
+backgroundColor = "#FFFFFF"
+# 次要背景色 - 浅灰
+secondaryBackgroundColor = "#F8F9FA"
+# 文本颜色 - 深灰
+textColor = "#1F2937"
+# 字体 - 系统默认
+font = "sans serif"
+
+[server]
+# 禁用文件监视器的重新加载提示（减少干扰）
+runOnSave = false
+
+[browser]
+# 禁用收集使用统计
+gatherUsageStats = false
+
+[client]
+# 显示错误详情
+showErrorDetails = true
+# 工具栏模式 - 最小化
+toolbarMode = "minimal"
+

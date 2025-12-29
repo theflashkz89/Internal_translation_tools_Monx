@@ -1,14 +1,8 @@
 import streamlit as st
-from utils import apply_custom_styles, parse_ppt_content, generate_pptx
+from utils import init_page, parse_ppt_content, generate_pptx
 from pathlib import Path
 
-st.set_page_config(
-    page_title="PPT 生成",
-    page_icon="📊",
-    layout="wide"
-)
-
-apply_custom_styles()
+init_page("PPT 生成", "📊", "wide")
 
 st.title("📊 PPT 生成")
 st.markdown("将文本内容转换为 PowerPoint 演示文稿")

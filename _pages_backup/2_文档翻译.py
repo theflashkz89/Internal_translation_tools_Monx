@@ -2,15 +2,9 @@ import streamlit as st
 from pathlib import Path
 import time
 import uuid
-from utils import handle_pdf_processing, translate_word_document, apply_custom_styles
+from utils import handle_pdf_processing, translate_word_document, init_page
 
-st.set_page_config(
-    page_title="文档翻译",
-    page_icon="📄",
-    layout="wide"
-)
-
-apply_custom_styles()
+init_page("文档翻译", "📄", "wide")
 
 st.title("📄 文档翻译")
 

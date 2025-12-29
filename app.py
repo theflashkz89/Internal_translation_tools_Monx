@@ -1,10 +1,9 @@
 import streamlit as st
 import os
-from utils import apply_custom_styles, translate_text, handle_pdf_processing, translate_word_document
+from utils import init_page, translate_text, handle_pdf_processing, translate_word_document
 
 # 1. 页面配置
-st.set_page_config(page_title="智能翻译助手", page_icon="🌐", layout="wide")
-apply_custom_styles()
+init_page("智能翻译助手", "🌐", "wide")
 
 # 2. 侧边栏导航
 with st.sidebar:
