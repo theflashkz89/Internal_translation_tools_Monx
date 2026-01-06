@@ -854,6 +854,213 @@ def apply_custom_styles():
     2. 第二阶段：加载完整样式
     3. 第三阶段：渐入显示页面
     """
+    # 自定义连接断开提示脚本（隐藏默认弹窗，显示友好提示）
+    import streamlit.components.v1 as components
+    
+    connection_monitor_html = """
+    <style>
+        /* 隐藏 Streamlit 默认的连接错误弹窗 */
+        .stException,
+        div[data-testid="stConnectionStatus"],
+        .element-container:has(div[data-testid="stConnectionStatus"]) {
+            display: none !important;
+        }
+        
+        /* 自定义重连提示样式 */
+        #custom-reconnect-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 999999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        #custom-reconnect-overlay.show {
+            display: flex !important;
+        }
+        
+        #custom-reconnect-content {
+            text-align: center;
+            padding: 40px;
+            max-width: 400px;
+        }
+        
+        #custom-reconnect-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        #custom-reconnect-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0F2B46;
+            margin-bottom: 12px;
+        }
+        
+        #custom-reconnect-message {
+            font-size: 16px;
+            color: #64748B;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        
+        #custom-reconnect-btn {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+        }
+        
+        #custom-reconnect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45);
+        }
+        
+        #custom-reconnect-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+    
+    <!-- 自定义重连提示 -->
+    <div id="custom-reconnect-overlay">
+        <div id="custom-reconnect-content">
+            <div id="custom-reconnect-icon">☕</div>
+            <div id="custom-reconnect-title">您已离开一段时间</div>
+            <div id="custom-reconnect-message">
+                页面连接已断开，请刷新页面以继续使用。<br>
+                您的输入内容不会丢失。
+            </div>
+            <button id="custom-reconnect-btn" onclick="location.reload()">
+                🔄 刷新页面
+            </button>
+        </div>
+    </div>
+    
+    <script>
+    (function() {
+        // 监控连接状态
+        let lastActivity = Date.now();
+        let checkInterval = null;
+        let isDisconnected = false;
+        
+        // 更新活动时间
+        function updateActivity() {
+            lastActivity = Date.now();
+        }
+        
+        // 监听用户活动
+        ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach(event => {
+            document.addEventListener(event, updateActivity, { passive: true });
+        });
+        
+        // 检测 Streamlit 的连接状态
+        function checkConnection() {
+            // 方法1: 检查是否存在 Streamlit 的连接错误元素
+            const connectionError = document.querySelector(
+                '[data-testid="stConnectionStatus"], ' +
+                '.stException, ' +
+                '[data-baseweb="modal"]'
+            );
+            
+            // 方法2: 检查 Streamlit 的 WebSocket 状态
+            const wsStatus = document.querySelector('.stStatusWidget');
+            
+            // 方法3: 检查是否有 "Connection error" 文本
+            const pageText = document.body.innerText || '';
+            const hasConnectionError = pageText.includes('Connection error') || 
+                                       pageText.includes('Is Streamlit still running');
+            
+            // 如果检测到连接错误
+            if (connectionError || hasConnectionError) {
+                if (!isDisconnected) {
+                    isDisconnected = true;
+                    showReconnectOverlay();
+                }
+            }
+        }
+        
+        // 显示重连提示
+        function showReconnectOverlay() {
+            const overlay = document.getElementById('custom-reconnect-overlay');
+            if (overlay) {
+                overlay.classList.add('show');
+                
+                // 隐藏原生弹窗
+                hideNativeDialog();
+            }
+        }
+        
+        // 隐藏原生对话框
+        function hideNativeDialog() {
+            // 隐藏 Streamlit 默认的错误弹窗
+            const dialogs = document.querySelectorAll(
+                '[data-baseweb="modal"], ' +
+                '.stException, ' +
+                '[data-testid="stConnectionStatus"]'
+            );
+            dialogs.forEach(d => {
+                d.style.display = 'none';
+                d.style.visibility = 'hidden';
+            });
+            
+            // 隐藏可能的遮罩层
+            const overlays = document.querySelectorAll('[data-baseweb="modal-backdrop"]');
+            overlays.forEach(o => {
+                o.style.display = 'none';
+            });
+        }
+        
+        // 使用 MutationObserver 监听 DOM 变化
+        const observer = new MutationObserver(function(mutations) {
+            // 检查是否出现连接错误
+            checkConnection();
+            
+            // 始终尝试隐藏原生弹窗
+            if (isDisconnected) {
+                hideNativeDialog();
+            }
+        });
+        
+        // 开始观察
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+        
+        // 定期检查连接状态
+        checkInterval = setInterval(checkConnection, 2000);
+        
+        // 页面可见性变化时检查
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                // 页面重新可见时，延迟检查连接
+                setTimeout(checkConnection, 1000);
+            }
+        });
+        
+        // 初始检查
+        setTimeout(checkConnection, 3000);
+    })();
+    </script>
+    """
+    
+    # 注入连接监控脚本
+    components.html(connection_monitor_html, height=0)
+    
     # 第一阶段：关键样式 + 初始隐藏（防止闪烁）
     st.markdown("""
         <style>
