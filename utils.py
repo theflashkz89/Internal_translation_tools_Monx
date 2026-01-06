@@ -207,15 +207,23 @@ def generate_email_draft(
     参数:
         email_type (str): 邮件类型（商务邮件、感谢信、请求邮件、通知邮件、回复邮件）
         tone (str): 语气风格（正式、友好、简洁、礼貌）
-        language (str): 邮件语言（中文、英文）
+        language (str): 邮件语言（中文、英文、意大利语）
         recipient (str): 收件人称呼（可选）
         subject (str): 邮件主题
         key_points (str): 关键要点/背景信息
     
     返回:
         str: 生成的邮件草稿正文
+    
+    注意:
+        当 language="意大利语" 且 tone="正式" 时，会自动使用意大利语正式尊称（Lei形式）
     """
     # 构建系统提示词
+    # 检查是否需要使用意大利语尊称（正式语气 + 意大利语）
+    italian_formal_note = ""
+    if language == "意大利语" and tone == "正式":
+        italian_formal_note = "- 必须使用意大利语正式尊称：使用 Lei（您，大写L）代替 tu，所有动词使用第三人称单数形式（如：Lei è, Lei può, Lei desidera 等），这是意大利语正式邮件的标准礼仪\n"
+    
     system_prompt = f"""你是一位专业的商务写作助手。
 请根据用户提供的信息，撰写一封{email_type}。
 要求：
@@ -225,7 +233,7 @@ def generate_email_draft(
 - 只输出邮件正文，不要添加额外说明
 - 如果是中文邮件，使用适当的敬语和礼貌用语
 - 如果是英文邮件，遵循商务邮件的标准格式
-- 重要：不要使用任何 Markdown 格式符号，包括星号（*）、下划线（_）、井号（#）等
+{italian_formal_note}- 重要：不要使用任何 Markdown 格式符号，包括星号（*）、下划线（_）、井号（#）等
 - 输出纯文本格式的邮件正文，不要有任何格式标记符号"""
     
     # 构建用户输入
@@ -321,6 +329,7 @@ def _get_deepl_lang_code(language_name: str) -> str:
         "中文": "ZH",
         "简体中文": "ZH",
         "英语": "EN-US",
+        "英文": "EN-US",  # 添加"英文"映射
         "日语": "JA",
         "法语": "FR",
         "德语": "DE",

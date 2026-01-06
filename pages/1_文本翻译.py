@@ -46,12 +46,7 @@ st.markdown("""
 st.markdown("<h1>📝 文本翻译</h1>", unsafe_allow_html=True)
 
 # 常用语言列表
-languages = [
-    "中文", "英语", "日语", "韩语", "法语", "德语", 
-    "西班牙语", "俄语", "意大利语", "葡萄牙语", "阿拉伯语",
-    "泰语", "越南语", "印尼语", "荷兰语", "瑞典语",
-    "挪威语", "丹麦语", "芬兰语", "波兰语", "土耳其语"
-]
+languages = ["中文", "英文", "意大利语", "德语"]
 
 # 初始化 session_state
 if "translated_text" not in st.session_state:
@@ -74,7 +69,7 @@ with col_mid:
     target_language = st.selectbox(
         "目标语言",
         options=languages,
-        index=1,
+        index=1,  # 默认选择"英文"
         key="target_language",
         label_visibility="collapsed"
     )

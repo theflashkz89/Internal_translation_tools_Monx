@@ -1,13 +1,13 @@
 ; Inno Setup 安装脚本
-; 软件名称: Monx Internal Translation Tools
-; 版本: 1.0
+; 软件名称: Monx Internal Tools
+; 版本: 1.4
 ; 发布人: Kan
 
-#define MyAppName "Monx Internal Translation Tools"
-#define MyAppVersion "1.0"
+#define MyAppName "Monx Internal Tools"
+#define MyAppVersion "1.4"
 #define MyAppPublisher "Kan"
-#define MyAppExeName "Internal Translation Tools.exe"
-#define MyAppDir "dist\Internal Translation Tools"
+#define MyAppExeName "Monx Internal Tools V1.4.exe"
+#define MyAppDir "dist\Monx Internal Tools V1.4"
 
 [Setup]
 ; 应用程序基本信息
@@ -20,7 +20,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=
 OutputDir=installer
-OutputBaseFilename=MonxInternalTranslationTools_Setup
+OutputBaseFilename=MonxInternalToolsV1.4_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -43,4 +43,3 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
