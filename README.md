@@ -27,6 +27,18 @@ An intelligent translation and document processing tool built with Streamlit. Th
 - Language support: Chinese, English, Italian
 - **Italian Formal**: Automatically uses formal Italian address (Lei form) when language is Italian and tone is Formal
 
+### 📧 Email Proofreading
+- AI-powered email proofreading and editing
+- Two proofreading modes:
+  - **Grammar Correction Only**: Fixes grammar, spelling, and punctuation errors while preserving original style
+  - **Polish & Improve**: Enhances expression, fluency, and professionalism in addition to fixing errors
+- Language options: Chinese, English, Italian
+- Tone adjustments: Friendly, Formal, Concise
+- Custom terminology support
+- Side-by-side comparison of original and proofread versions
+- Content limit: 5,000 characters
+- **Italian Formal**: Automatically uses formal Italian address (Lei form) when language is Italian and tone is Formal
+
 ## Requirements
 
 - Python 3.11+
@@ -94,7 +106,24 @@ pyinstaller "Monx Internal Tools V1.51.spec"
 
 ## Version
 
-Current version: **v2.1 Stable**
+Current version: **v2.2 Stable**
+
+### Changelog
+
+#### v2.2 (Latest)
+- ✨ Added Email Proofreading feature
+  - Grammar correction and content polishing modes
+  - Side-by-side comparison view
+  - Automatic configuration change detection
+  - Character limit: 5,000 characters
+  - Support for custom terminology
+
+#### v2.1
+- Initial stable release
+- Online text translation
+- Document file translation
+- PPT generation
+- Email assistant
 
 ## License
 

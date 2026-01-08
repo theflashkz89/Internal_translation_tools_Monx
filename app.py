@@ -10,7 +10,7 @@ with st.sidebar:
     st.header("功能菜单")
     selected_page = st.radio(
         "请选择功能:", 
-        ["📝 在线文本翻译", "📂 文档文件翻译", "📊 PPT生成", "✉️ 邮件助手"]
+        ["📝 在线文本翻译", "📂 文档文件翻译", "📊 PPT生成", "✉️ 邮件助手", "📧 邮件校对"]
     )
     st.markdown("---")
     st.caption("v2.1 Stable")
@@ -370,4 +370,216 @@ elif selected_page == "✉️ 邮件助手":
         # 重新生成按钮
         if st.button("🔄 重新生成", use_container_width=True):
             st.session_state.email_draft = ""
+            st.rerun()
+
+# ==================================================
+# 页面 5: 邮件校对
+# ==================================================
+elif selected_page == "📧 邮件校对":
+    from utils import proofread_email
+    import streamlit.components.v1 as components
+    import json
+    
+    st.title("📧 邮件校对")
+    st.markdown("使用 AI 智能校对您的邮件草稿")
+    
+    # 初始化 session_state
+    if "proofread_original_email" not in st.session_state:
+        st.session_state.proofread_original_email = ""
+    if "proofread_result" not in st.session_state:
+        st.session_state.proofread_result = ""
+    # 保存上次使用的配置，用于检测变化
+    if "proofread_config" not in st.session_state:
+        st.session_state.proofread_config = {}
+    
+    # 校对配置
+    col_config1, col_config2 = st.columns([1, 1])
+    
+    with col_config1:
+        # 校对模式选择
+        proofread_mode = st.radio(
+            "🔍 校对模式",
+            ["仅语法修正", "润色改进"],
+            index=0,
+            help="仅语法修正：只修正语法和拼写错误\n润色改进：在修正错误的基础上优化表达"
+        )
+        
+        # 目标语言选择
+        target_language = st.selectbox(
+            "🌐 目标语言",
+            ["中文", "英文", "意大利语"],
+            index=0,
+            help="选择邮件的目标语言"
+        )
+    
+    with col_config2:
+        # 语气风格选择
+        tone = st.selectbox(
+            "🎭 语气风格",
+            ["友好", "正式", "简洁"],
+            index=1,
+            help="选择邮件的语气风格"
+        )
+        
+        # 自定义术语/要求
+        custom_terms = st.text_input(
+            "📌 自定义术语/要求（可选）",
+            placeholder="例如：必须使用 '客户' 而非 '客人'",
+            help="输入需要特别处理的术语或要求"
+        )
+    
+    # 检测配置是否发生变化，如果变化则清除旧的校对结果
+    current_config = {
+        "proofread_mode": proofread_mode,
+        "target_language": target_language,
+        "tone": tone,
+        "custom_terms": custom_terms
+    }
+    
+    if st.session_state.proofread_result and st.session_state.proofread_config != current_config:
+        # 配置已变化，清除旧结果
+        st.session_state.proofread_result = ""
+        st.session_state.proofread_original_email = ""
+        st.info("💡 检测到配置变化，请重新校对")
+    
+    st.markdown("---")
+    
+    # 邮件内容输入区
+    st.subheader("📝 粘贴邮件草稿")
+    email_input = st.text_area(
+        "邮件内容",
+        height=250,
+        placeholder="在此粘贴您需要校对的邮件草稿...",
+        help="粘贴完整的邮件内容，包括正文和签名（限制5000字符）",
+        key="email_input_area"
+    )
+    
+    # 字符计数和限制提示
+    MAX_EMAIL_LENGTH = 5000
+    current_length = len(email_input)
+    if current_length > MAX_EMAIL_LENGTH:
+        st.error(f"⚠️ 内容超出限制：{current_length}/{MAX_EMAIL_LENGTH} 字符，请精简后重试")
+    elif current_length > 0:
+        st.caption(f"📊 字符数：{current_length}/{MAX_EMAIL_LENGTH}")
+    
+    # 开始校对按钮
+    if st.button("🚀 开始校对", type="primary", use_container_width=True):
+        if not email_input.strip():
+            st.warning("⚠️ 请输入邮件内容")
+        elif len(email_input) > MAX_EMAIL_LENGTH:
+            st.warning(f"⚠️ 邮件内容超过 {MAX_EMAIL_LENGTH} 字符限制，请精简后重试")
+        else:
+            with st.spinner("正在校对邮件，请稍候..."):
+                try:
+                    result = proofread_email(
+                        email_content=email_input,
+                        proofread_mode=proofread_mode,
+                        target_language=target_language,
+                        tone=tone,
+                        custom_terms=custom_terms
+                    )
+                    st.session_state.proofread_original_email = email_input
+                    st.session_state.proofread_result = result
+                    # 保存当前配置，用于检测后续变化
+                    st.session_state.proofread_config = current_config.copy()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ 校对失败: {str(e)}")
+    
+    # 显示校对结果（并排对比）
+    if st.session_state.proofread_result:
+        st.markdown("---")
+        st.subheader("✨ 校对结果")
+        
+        # 并排显示原文和校对后的邮件
+        col_original, col_proofread = st.columns([1, 1])
+        
+        with col_original:
+            st.markdown("**📄 原文**")
+            st.text_area(
+                "原文内容",
+                value=st.session_state.proofread_original_email,
+                height=350,
+                key="proofread_original_email_area",
+                label_visibility="collapsed"
+            )
+        
+        with col_proofread:
+            st.markdown("**✨ 校对后**")
+            st.text_area(
+                "校对后的邮件",
+                value=st.session_state.proofread_result,
+                height=350,
+                key="proofread_result_area",
+                label_visibility="collapsed"
+            )
+        
+        # 复制校对结果按钮
+        escaped_text = json.dumps(st.session_state.proofread_result)
+        
+        copy_button_html = f"""
+        <div style="margin-top: 10px;">
+            <button 
+                id="copyProofreadBtn" 
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    background-color: #2b77ff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                "
+                onmouseover="this.style.backgroundColor='#1a60e0'"
+                onmouseout="this.style.backgroundColor='#2b77ff'"
+            >
+                📋 复制校对结果
+            </button>
+        </div>
+        
+        <script>
+        (function() {{
+            const text = {escaped_text};
+            const copyBtn = document.getElementById('copyProofreadBtn');
+            
+            if (!copyBtn) {{
+                setTimeout(arguments.callee, 100);
+                return;
+            }}
+            
+            copyBtn.addEventListener('click', function() {{
+                if (navigator.clipboard) {{
+                    navigator.clipboard.writeText(text);
+                    copyBtn.innerText = '✅ 已复制';
+                    copyBtn.style.backgroundColor = '#28a745';
+                    setTimeout(() => {{
+                        copyBtn.innerText = '📋 复制校对结果';
+                        copyBtn.style.backgroundColor = '#2b77ff';
+                    }}, 2000);
+                }} else {{
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    copyBtn.innerText = '✅ 已复制';
+                    copyBtn.style.backgroundColor = '#28a745';
+                    setTimeout(() => {{
+                        copyBtn.innerText = '📋 复制校对结果';
+                        copyBtn.style.backgroundColor = '#2b77ff';
+                    }}, 2000);
+                }}
+            }});
+        }})();
+        </script>
+        """
+        components.html(copy_button_html, height=50)
+        
+        # 重新校对按钮
+        if st.button("🔄 重新校对", use_container_width=True):
+            st.session_state.proofread_result = ""
+            st.session_state.proofread_config = {}
             st.rerun()

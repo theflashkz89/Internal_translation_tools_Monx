@@ -1415,3 +1415,56 @@ def generate_pptx(slides: List[Dict[str, Any]], output_path: str = None) -> str:
     
     prs.save(output_path)
     return output_path
+
+
+def proofread_email(
+    email_content: str,
+    proofread_mode: str,
+    target_language: str,
+    tone: str,
+    custom_terms: str = ""
+) -> str:
+    """
+    使用 DeepSeek AI 校对邮件草稿
+    
+    参数:
+        email_content (str): 邮件草稿内容
+        proofread_mode (str): 校对模式（"仅语法修正" 或 "润色改进"）
+        target_language (str): 目标语言（"中文"、"英文"、"意大利语"）
+        tone (str): 语气风格（"友好"、"正式"、"简洁"）
+        custom_terms (str, optional): 自定义术语/要求，默认为空字符串
+    
+    返回:
+        str: 校对后的邮件正文
+    
+    异常:
+        Exception: 当 API 调用失败时抛出异常
+    """
+    # 构建系统提示词
+    # 检查是否需要使用意大利语尊称（正式语气 + 意大利语）
+    italian_formal_note = ""
+    if target_language == "意大利语" and tone == "正式":
+        italian_formal_note = "- 必须使用意大利语正式尊称：使用 Lei（您，大写L）代替 tu，所有动词使用第三人称单数形式（如：Lei è, Lei può, Lei desidera 等），这是意大利语正式邮件的标准礼仪\n"
+    
+    # 构建自定义术语说明
+    custom_terms_note = ""
+    if custom_terms and custom_terms.strip():
+        custom_terms_note = f"- 自定义术语/要求：{custom_terms.strip()}\n"
+    
+    system_prompt = f"""你是一位专业的邮件校对助手。
+请对用户提供的邮件草稿进行校对。
+
+校对模式：{proofread_mode}
+目标语言：{target_language}
+语气风格：{tone}
+
+校对要求：
+- 如果校对模式是"仅语法修正"：仅修正语法错误、拼写错误和标点错误，保持原文风格和表达方式不变
+- 如果校对模式是"润色改进"：在修正语法错误的基础上，优化表达、提升流畅度和专业性，使其更符合商务邮件标准
+{custom_terms_note}{italian_formal_note}- 保留邮件签名格式（如果存在）
+- 不输出任何 Markdown 格式符号，包括星号（*）、下划线（_）、井号（#）等
+- 仅输出校对后的邮件正文，不要添加任何说明或注释
+- 保持邮件的整体结构和段落格式"""
+    
+    # 调用 DeepSeek API 进行校对
+    return call_deepseek_api(email_content, system_prompt)
